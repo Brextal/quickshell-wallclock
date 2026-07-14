@@ -1,15 +1,17 @@
 import QtQuick
+import "./shared" as Pywal
 
 Item {
     id: root
     property real value: 0.0
     property real lineWidth: 5
-    property color arcColor: "#3dd1b0"
+    property color arcColor: pywalColors.color4
     property color bgColor: "#22ffffff"
     property string displayText: ""
     property string label: ""
     property int labelSize: 11
     property int valueSize: 18
+    property var pywal: Pywal.Pywal { id: pywalColors }
 
     implicitWidth: 88
     implicitHeight: 88
@@ -56,7 +58,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.displayText
-            color: "#f5c842"
+            color: pywalColors.color5
             style: Text.Outline
             styleColor: "#80000000"
             font.pixelSize: root.valueSize
@@ -66,7 +68,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.label
-            color: "#d4a017"
+            color: pywalColors.color6
             style: Text.Outline
             styleColor: "#80000000"
             font.pixelSize: root.labelSize
