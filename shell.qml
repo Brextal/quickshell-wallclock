@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Mpris
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Window
 import Qt5Compat.GraphicalEffects
 import "./shared" as Pywal
@@ -142,7 +143,9 @@ ShellRoot {
     property var cavaBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     property string coverPath: ""
     property string lastTrackUrl: ""
-    property string _dir: Qt.resolvedUrl(".").toString().replace("file://", "")
+    property string _dir: Qt.resolvedUrl(".").toString().replace("file://", "") + "/"
+    property bool eqEnabled: false
+    property var eqGains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     Timer {
         interval: 1000
@@ -157,11 +160,11 @@ ShellRoot {
     PanelWindow {
         id: musicPanel
         anchors { right: true; top: true }
-        margins.top: 280
+        margins.top: 220
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         implicitWidth: 164
-        implicitHeight: 440
+        implicitHeight: 560
         visible: root.showingMusic
 
         aboveWindows: true
@@ -450,12 +453,232 @@ ShellRoot {
                         }
                     }
                 }
+
+                // ─── Separator ───
+
+                Rectangle {
+                    width: 80; height: 1
+                    color: "#30ffffff"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                // ─── Equalizer ───
+
+                Item {
+                    width: parent.width
+                    height: 90
+
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        spacing: 2
+
+                        Repeater {
+                            model: 10
+                            Item {
+                                width: 14; height: 70
+
+                                Slider {
+                                    id: eqSlider
+                                    anchors.fill: parent
+                                    orientation: Qt.Vertical
+                                    from: -12; to: 12; stepSize: 0.5
+                                    value: root.eqGains[index]
+                                    onMoved: {
+                                        var gains = root.eqGains
+                                        gains[index] = value
+                                        root.eqGains = gains
+                                        eqProc.command = ["sh", root._dir + "eq-control.sh", "set-band", index.toString(), value.toString()]
+                                        eqProc.running = false
+                                        eqProc.running = true
+                                    }
+
+                                    background: Rectangle {
+                                        x: parent.width / 2 - width / 2
+                                        width: 4; height: parent.height
+                                        radius: 2
+                                        color: "#20ffffff"
+
+                                        Rectangle {
+                                            width: parent.width
+                                            height: Math.max(0, (1 - eqSlider.visualPosition) * parent.height)
+                                            y: eqSlider.visualPosition * parent.height
+                                            radius: 2
+                                            color: pywalColors.color4
+                                            opacity: 0.6
+                                        }
+                                    }
+
+                                    handle: Rectangle {
+                                        x: parent.width / 2 - width / 2
+                                        y: eqSlider.visualPosition * (parent.height - height)
+                                        width: 10; height: 10
+                                        radius: 5
+                                        color: eqSlider.pressed ? pywalColors.color5 : pywalColors.color4
+                                    }
+                                }
+
+                                // Freq label
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.top: parent.bottom
+                                    anchors.topMargin: 2
+                                    text: ["60", "170", "315", "600", "1K", "3K", "6K", "12K", "14K", "16K"][index]
+                                    color: pywalColors.color5
+                                    font.pixelSize: 6
+                                    horizontalAlignment: Text.AlignHCenter
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ─── EQ Controls ───
+
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 8
+
+                    // On/Off
+                    Item {
+                        width: 40; height: 18
+                        Rectangle {
+                            anchors.fill: parent; radius: 4
+                            color: eqBtnMa.containsMouse ? "#301e1e2e" : "transparent"
+                            border { color: root.eqEnabled ? pywalColors.color4 : "#30ffffff"; width: 1 }
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.eqEnabled ? "EQ" : "EQ"
+                            color: root.eqEnabled ? pywalColors.color4 : "#aaaaaa"
+                            font.pixelSize: 8
+                            font.bold: true
+                        }
+                        MouseArea {
+                            id: eqBtnMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.eqEnabled = !root.eqEnabled
+                                eqProc.command = ["sh", root._dir + "eq-control.sh", root.eqEnabled ? "enable" : "disable"]
+                                eqProc.running = false
+                                eqProc.running = true
+                            }
+                        }
+                    }
+
+                    // Preset selector
+                    Item {
+                        width: 56; height: 18
+                        Rectangle {
+                            anchors.fill: parent; radius: 4
+                            color: presetMa.containsMouse ? "#301e1e2e" : "transparent"
+                            border { color: "#30ffffff"; width: 1 }
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Preset"
+                            color: "#aaaaaa"
+                            font.pixelSize: 8
+                        }
+                        MouseArea {
+                            id: presetMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                presetMenu.visible = !presetMenu.visible
+                            }
+                        }
+
+                        // Preset dropdown
+                        Column {
+                            id: presetMenu
+                            visible: false
+                            anchors.top: parent.bottom
+                            anchors.topMargin: 4
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            z: 100
+
+                            Rectangle {
+                                width: 80; height: 20; radius: 3
+                                color: presetRockMa.containsMouse ? "#401e1e2e" : "#301e1e2e"
+                                Text { anchors.centerIn: parent; text: "Rock"; color: pywalColors.foreground; font.pixelSize: 8 }
+                                MouseArea { id: presetRockMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: { eqProc.command = ["sh", root._dir + "eq-control.sh", "preset", "rock"]; eqProc.running = false; eqProc.running = true; presetMenu.visible = false }
+                                }
+                            }
+                            Rectangle {
+                                width: 80; height: 20; radius: 3
+                                color: presetPopMa.containsMouse ? "#401e1e2e" : "#301e1e2e"
+                                Text { anchors.centerIn: parent; text: "Pop"; color: pywalColors.foreground; font.pixelSize: 8 }
+                                MouseArea { id: presetPopMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: { eqProc.command = ["sh", root._dir + "eq-control.sh", "preset", "pop"]; eqProc.running = false; eqProc.running = true; presetMenu.visible = false }
+                                }
+                            }
+                            Rectangle {
+                                width: 80; height: 20; radius: 3
+                                color: presetClassicalMa.containsMouse ? "#401e1e2e" : "#301e1e2e"
+                                Text { anchors.centerIn: parent; text: "Classical"; color: pywalColors.foreground; font.pixelSize: 8 }
+                                MouseArea { id: presetClassicalMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: { eqProc.command = ["sh", root._dir + "eq-control.sh", "preset", "classical"]; eqProc.running = false; eqProc.running = true; presetMenu.visible = false }
+                                }
+                            }
+                            Rectangle {
+                                width: 80; height: 20; radius: 3
+                                color: presetFlatMa.containsMouse ? "#401e1e2e" : "#301e1e2e"
+                                Text { anchors.centerIn: parent; text: "Flat"; color: pywalColors.foreground; font.pixelSize: 8 }
+                                MouseArea { id: presetFlatMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: { eqProc.command = ["sh", root._dir + "eq-control.sh", "preset", "flat"]; eqProc.running = false; eqProc.running = true; presetMenu.visible = false }
+                                }
+                            }
+                        }
+                    }
+
+                    // Reset
+                    Item {
+                        width: 20; height: 18
+                        Rectangle {
+                            anchors.fill: parent; radius: 4
+                            color: resetMa.containsMouse ? "#301e1e2e" : "transparent"
+                            border { color: "#30ffffff"; width: 1 }
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\uf021"
+                            color: "#aaaaaa"
+                            font.family: "Symbols Nerd Font"
+                            font.pixelSize: 8
+                        }
+                        MouseArea {
+                            id: resetMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.eqGains = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                for (var i = 0; i < 10; i++) {
+                                    eqProc.command = ["sh", root._dir + "eq-control.sh", "set-band", i.toString(), "0"]
+                                    eqProc.running = false
+                                    eqProc.running = true
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
     Process {
         id: folderProc
+        command: []
+        running: false
+    }
+
+    Process {
+        id: eqProc
         command: []
         running: false
     }
