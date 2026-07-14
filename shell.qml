@@ -142,6 +142,7 @@ ShellRoot {
     property var cavaBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     property string coverPath: ""
     property string lastTrackUrl: ""
+    property string _dir: Qt.resolvedUrl(".").toString().replace("file://", "")
 
     Timer {
         interval: 1000
@@ -478,7 +479,7 @@ ShellRoot {
 
     Process {
         id: cavaProc
-        command: ["sh", "/home/brextal/.config/quickshell/wallclock/cava-read.sh"]
+        command: ["sh", root._dir + "cava-read.sh"]
         running: false
     }
 
@@ -546,7 +547,7 @@ ShellRoot {
                 var url = p.metadata["xesam:url"] || ""
                 if (url && url !== root.lastTrackUrl) {
                     root.lastTrackUrl = url
-                    coverProc.command = ["sh", "/home/brextal/.config/quickshell/wallclock/find-cover.sh", url]
+                    coverProc.command = ["sh", root._dir + "find-cover.sh", url]
                     coverProc.running = false
                     coverProc.running = true
                 }
@@ -627,7 +628,7 @@ ShellRoot {
 
     Process {
         id: poller
-        command: ["/home/brextal/.config/quickshell/wallclock/stats.sh"]
+        command: [root._dir + "stats.sh"]
         running: false
 
         stdout: StdioCollector {

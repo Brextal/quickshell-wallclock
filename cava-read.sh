@@ -7,7 +7,7 @@ trap cleanup TERM INT
 rm -f /tmp/cava_fifo
 mkfifo /tmp/cava_fifo
 
-cava -p /home/brextal/.config/cava/config > /tmp/cava_fifo 2>/dev/null &
+cava -p "$HOME/.config/cava/config" > /tmp/cava_fifo 2>/dev/null &
 CAVA_PID=$!
 
 while read line < /tmp/cava_fifo; do
