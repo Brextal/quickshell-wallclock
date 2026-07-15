@@ -161,6 +161,7 @@ ShellRoot {
         id: musicPanel
         anchors { right: true; top: true }
         margins.top: 220
+        margins.right: 30
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         implicitWidth: 164
@@ -658,11 +659,9 @@ ShellRoot {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 root.eqGains = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                                for (var i = 0; i < 10; i++) {
-                                    eqProc.command = ["sh", root._dir + "eq-control.sh", "set-band", i.toString(), "0"]
-                                    eqProc.running = false
-                                    eqProc.running = true
-                                }
+                                eqProc.command = ["sh", "-c", "for i in $(seq 0 9); do " + root._dir + "eq-control.sh set-band $i 0; done"]
+                                eqProc.running = false
+                                eqProc.running = true
                             }
                         }
                     }
@@ -754,11 +753,7 @@ ShellRoot {
         property var player: Mpris.players.values.length > 0 ? Mpris.players.values[0] : null
 
         function findActive() {
-            var list = Mpris.players.values
-            for (var i = 0; i < list.length; i++) {
-                if (list[i] && list[i].isPlaying) return list[i]
-            }
-            return list.length > 0 ? list[0] : null
+            return player || (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null)
         }
 
         function updateState() {
