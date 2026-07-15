@@ -700,6 +700,12 @@ ShellRoot {
     }
 
     Process {
+        id: eqStartProc
+        command: ["sh", "-c", "pgrep -x easyeffects || easyeffects --service-mode &"]
+        running: false
+    }
+
+    Process {
         id: cavaProc
         command: ["sh", root._dir + "cava-read.sh"]
         running: false
@@ -709,6 +715,7 @@ ShellRoot {
         target: root
         function onShowingMusicChanged() {
             if (root.showingMusic) {
+                eqStartProc.running = true
                 cavaProc.running = true
             } else {
                 cavaProc.running = false
