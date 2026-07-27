@@ -144,8 +144,9 @@ ShellRoot {
     property string coverPath: ""
     property string lastTrackUrl: ""
     property string _dir: Qt.resolvedUrl(".").toString().replace("file://", "") + "/"
-    property bool eqEnabled: false
-    property var eqGains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    property real artistScrollX: 0
+    property real titleScrollX: 0
+
 
     Timer {
         interval: 1000
@@ -164,7 +165,7 @@ ShellRoot {
         margins.right: 30
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
-        implicitWidth: 164
+        implicitWidth: 200
         implicitHeight: 560
         visible: root.showingMusic
 
@@ -179,8 +180,15 @@ ShellRoot {
 
         Item {
             anchors.centerIn: parent
-            width: 144
+            width: 180
             height: 400
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 0
+                color: "#221e1e2e"
+                border { color: "#20ffffff"; width: 1 }
+            }
 
             Column {
                 anchors.centerIn: parent
@@ -276,33 +284,79 @@ ShellRoot {
 
                 // ─── Artist ───
 
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: {
-                        var p = musicPlayer.findActive()
-                        return p && p.trackArtist ? p.trackArtist : "Artist"
+                Item {
+                    width: 180; height: 16
+
+                    Item {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        clip: true
+
+                        Text {
+                            id: artistSingle
+                            visible: false
+                            font.pixelSize: 12
+                            font.bold: true
+                            text: {
+                                var p = musicPlayer.findActive()
+                                return (p && p.trackArtist ? p.trackArtist : "Artist") + "  \u25cf  "
+                            }
+                        }
+
+                        Text {
+                            id: artistLabel
+                            anchors.verticalCenter: parent.verticalCenter
+                            property string original: {
+                                var p = musicPlayer.findActive()
+                                return p && p.trackArtist ? p.trackArtist : "Artist"
+                            }
+                            text: original + "  \u25cf  " + original + "  \u25cf  " + original
+                            color: pywalColors.color4
+                            font.pixelSize: 12
+                            font.bold: true
+                            width: implicitWidth
+                            x: root.artistScrollX
+                        }
                     }
-                    color: pywalColors.color4
-                    font.pixelSize: 12
-                    font.bold: true
-                    width: 144
-                    horizontalAlignment: Text.AlignHCenter
-                    elide: Text.ElideRight
                 }
 
                 // ─── Song title ───
 
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: {
-                        var p = musicPlayer.findActive()
-                        return p && p.trackTitle ? p.trackTitle : "Song"
+                Item {
+                    width: 180; height: 16
+
+                    Item {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        clip: true
+
+                        Text {
+                            id: titleSingle
+                            visible: false
+                            font.pixelSize: 11
+                            text: {
+                                var p = musicPlayer.findActive()
+                                return (p && p.trackTitle ? p.trackTitle : "Song") + "  \u25cf  "
+                            }
+                        }
+
+                        Text {
+                            id: titleLabel
+                            anchors.verticalCenter: parent.verticalCenter
+                            property string original: {
+                                var p = musicPlayer.findActive()
+                                return p && p.trackTitle ? p.trackTitle : "Song"
+                            }
+                            text: original + "  \u25cf  " + original + "  \u25cf  " + original
+                            color: pywalColors.color4
+                            opacity: 0.85
+                            font.pixelSize: 11
+                            width: implicitWidth
+                            x: root.titleScrollX
+                        }
                     }
-                    color: pywalColors.foreground
-                    font.pixelSize: 11
-                    width: 144
-                    horizontalAlignment: Text.AlignHCenter
-                    elide: Text.ElideRight
                 }
 
                 // ─── Duration ───
@@ -321,7 +375,8 @@ ShellRoot {
                         return fmt(pos) + " / " + fmt(dur)
                     }
                     anchors.horizontalCenter: parent.horizontalCenter
-                    color: pywalColors.color5
+                    color: pywalColors.color4
+                    opacity: 0.65
                     font.pixelSize: 10
                 }
 
@@ -352,7 +407,8 @@ ShellRoot {
                         Text {
                             anchors.centerIn: parent
                             text: "\uf04a"
-                            color: mPrevMa.containsMouse ? pywalColors.color4 : "#aaaaaa"
+                            color: pywalColors.color4
+                            opacity: mPrevMa.containsMouse ? 1.0 : 0.5
                             font.family: "Symbols Nerd Font"
                             font.pixelSize: 12
                         }
@@ -385,7 +441,8 @@ ShellRoot {
                         Text {
                             anchors.centerIn: parent
                             text: "\uf07c"
-                            color: mFolderMa.containsMouse ? pywalColors.color4 : "#aaaaaa"
+                            color: pywalColors.color4
+                            opacity: mFolderMa.containsMouse ? 1.0 : 0.5
                             font.family: "Symbols Nerd Font"
                             font.pixelSize: 12
                         }
@@ -411,7 +468,8 @@ ShellRoot {
                         Text {
                             anchors.centerIn: parent
                             text: "\uf04e"
-                            color: mNextMa.containsMouse ? pywalColors.color4 : "#aaaaaa"
+                            color: pywalColors.color4
+                            opacity: mNextMa.containsMouse ? 1.0 : 0.5
                             font.family: "Symbols Nerd Font"
                             font.pixelSize: 12
                         }
@@ -455,229 +513,13 @@ ShellRoot {
                     }
                 }
 
-                // ─── Separator ───
 
-                Rectangle {
-                    width: 80; height: 1
-                    color: "#30ffffff"
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
-
-                // ─── Equalizer ───
-
-                Item {
-                    width: parent.width
-                    height: 90
-
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom
-                        spacing: 2
-
-                        Repeater {
-                            model: 10
-                            Item {
-                                width: 14; height: 70
-
-                                Slider {
-                                    id: eqSlider
-                                    anchors.fill: parent
-                                    orientation: Qt.Vertical
-                                    from: -12; to: 12; stepSize: 0.5
-                                    value: root.eqGains[index]
-                                    onMoved: {
-                                        var gains = root.eqGains
-                                        gains[index] = value
-                                        root.eqGains = gains
-                                        eqProc.command = ["sh", root._dir + "eq-control.sh", "set-band", index.toString(), value.toString()]
-                                        eqProc.running = false
-                                        eqProc.running = true
-                                    }
-
-                                    background: Rectangle {
-                                        x: parent.width / 2 - width / 2
-                                        width: 4; height: parent.height
-                                        radius: 2
-                                        color: "#20ffffff"
-
-                                        Rectangle {
-                                            width: parent.width
-                                            height: Math.max(0, (1 - eqSlider.visualPosition) * parent.height)
-                                            y: eqSlider.visualPosition * parent.height
-                                            radius: 2
-                                            color: pywalColors.color4
-                                            opacity: 0.6
-                                        }
-                                    }
-
-                                    handle: Rectangle {
-                                        x: parent.width / 2 - width / 2
-                                        y: eqSlider.visualPosition * (parent.height - height)
-                                        width: 10; height: 10
-                                        radius: 5
-                                        color: eqSlider.pressed ? pywalColors.color5 : pywalColors.color4
-                                    }
-                                }
-
-                                // Freq label
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.top: parent.bottom
-                                    anchors.topMargin: 2
-                                    text: ["60", "170", "315", "600", "1K", "3K", "6K", "12K", "14K", "16K"][index]
-                                    color: pywalColors.color5
-                                    font.pixelSize: 6
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ─── EQ Controls ───
-
-                Row {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 8
-
-                    // On/Off
-                    Item {
-                        width: 40; height: 18
-                        Rectangle {
-                            anchors.fill: parent; radius: 4
-                            color: eqBtnMa.containsMouse ? "#301e1e2e" : "transparent"
-                            border { color: root.eqEnabled ? pywalColors.color4 : "#30ffffff"; width: 1 }
-                        }
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.eqEnabled ? "EQ" : "EQ"
-                            color: root.eqEnabled ? pywalColors.color4 : "#aaaaaa"
-                            font.pixelSize: 8
-                            font.bold: true
-                        }
-                        MouseArea {
-                            id: eqBtnMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.eqEnabled = !root.eqEnabled
-                                eqProc.command = ["sh", root._dir + "eq-control.sh", root.eqEnabled ? "enable" : "disable"]
-                                eqProc.running = false
-                                eqProc.running = true
-                            }
-                        }
-                    }
-
-                    // Preset selector
-                    Item {
-                        width: 56; height: 18
-                        Rectangle {
-                            anchors.fill: parent; radius: 4
-                            color: presetMa.containsMouse ? "#301e1e2e" : "transparent"
-                            border { color: "#30ffffff"; width: 1 }
-                        }
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Preset"
-                            color: "#aaaaaa"
-                            font.pixelSize: 8
-                        }
-                        MouseArea {
-                            id: presetMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                presetMenu.visible = !presetMenu.visible
-                            }
-                        }
-
-                        // Preset dropdown
-                        Column {
-                            id: presetMenu
-                            visible: false
-                            anchors.top: parent.bottom
-                            anchors.topMargin: 4
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            z: 100
-
-                            Rectangle {
-                                width: 80; height: 20; radius: 3
-                                color: presetRockMa.containsMouse ? "#401e1e2e" : "#301e1e2e"
-                                Text { anchors.centerIn: parent; text: "Rock"; color: pywalColors.foreground; font.pixelSize: 8 }
-                                MouseArea { id: presetRockMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { eqProc.command = ["sh", root._dir + "eq-control.sh", "preset", "rock"]; eqProc.running = false; eqProc.running = true; presetMenu.visible = false }
-                                }
-                            }
-                            Rectangle {
-                                width: 80; height: 20; radius: 3
-                                color: presetPopMa.containsMouse ? "#401e1e2e" : "#301e1e2e"
-                                Text { anchors.centerIn: parent; text: "Pop"; color: pywalColors.foreground; font.pixelSize: 8 }
-                                MouseArea { id: presetPopMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { eqProc.command = ["sh", root._dir + "eq-control.sh", "preset", "pop"]; eqProc.running = false; eqProc.running = true; presetMenu.visible = false }
-                                }
-                            }
-                            Rectangle {
-                                width: 80; height: 20; radius: 3
-                                color: presetClassicalMa.containsMouse ? "#401e1e2e" : "#301e1e2e"
-                                Text { anchors.centerIn: parent; text: "Classical"; color: pywalColors.foreground; font.pixelSize: 8 }
-                                MouseArea { id: presetClassicalMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { eqProc.command = ["sh", root._dir + "eq-control.sh", "preset", "classical"]; eqProc.running = false; eqProc.running = true; presetMenu.visible = false }
-                                }
-                            }
-                            Rectangle {
-                                width: 80; height: 20; radius: 3
-                                color: presetFlatMa.containsMouse ? "#401e1e2e" : "#301e1e2e"
-                                Text { anchors.centerIn: parent; text: "Flat"; color: pywalColors.foreground; font.pixelSize: 8 }
-                                MouseArea { id: presetFlatMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { eqProc.command = ["sh", root._dir + "eq-control.sh", "preset", "flat"]; eqProc.running = false; eqProc.running = true; presetMenu.visible = false }
-                                }
-                            }
-                        }
-                    }
-
-                    // Reset
-                    Item {
-                        width: 20; height: 18
-                        Rectangle {
-                            anchors.fill: parent; radius: 4
-                            color: resetMa.containsMouse ? "#301e1e2e" : "transparent"
-                            border { color: "#30ffffff"; width: 1 }
-                        }
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf021"
-                            color: "#aaaaaa"
-                            font.family: "Symbols Nerd Font"
-                            font.pixelSize: 8
-                        }
-                        MouseArea {
-                            id: resetMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.eqGains = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                                eqProc.command = ["sh", "-c", "for i in $(seq 0 9); do " + root._dir + "eq-control.sh set-band $i 0; done"]
-                                eqProc.running = false
-                                eqProc.running = true
-                            }
-                        }
-                    }
-                }
             }
         }
     }
 
     Process {
         id: folderProc
-        command: []
-        running: false
-    }
-
-    Process {
-        id: eqProc
         command: []
         running: false
     }
@@ -700,12 +542,6 @@ ShellRoot {
     }
 
     Process {
-        id: eqStartProc
-        command: ["sh", "-c", "pgrep -x easyeffects || easyeffects --service-mode &"]
-        running: false
-    }
-
-    Process {
         id: cavaProc
         command: ["sh", root._dir + "cava-read.sh"]
         running: false
@@ -715,7 +551,6 @@ ShellRoot {
         target: root
         function onShowingMusicChanged() {
             if (root.showingMusic) {
-                eqStartProc.running = true
                 cavaProc.running = true
             } else {
                 cavaProc.running = false
@@ -748,6 +583,33 @@ ShellRoot {
         onTriggered: cavaReader.running = false, cavaReader.running = true
     }
 
+    Timer {
+        interval: 16
+        running: root.showingMusic
+        repeat: true
+        onTriggered: {
+            var visibleW = 160
+            var aw = artistLabel.width
+            if (aw > visibleW) {
+                var asw = artistSingle.implicitWidth
+                root.artistScrollX -= 0.5
+                if (root.artistScrollX <= -asw)
+                    root.artistScrollX = 0
+            } else {
+                root.artistScrollX = (visibleW - aw) / 2
+            }
+            var tw = titleLabel.width
+            if (tw > visibleW) {
+                var tsw = titleSingle.implicitWidth
+                root.titleScrollX -= 0.5
+                if (root.titleScrollX <= -tsw)
+                    root.titleScrollX = 0
+            } else {
+                root.titleScrollX = (visibleW - tw) / 2
+            }
+        }
+    }
+
     function openFolder() {
         folderProc.command = ["sh", "-c", "dir=$(zenity --file-selection --directory --title='Seleccionar música') && [ -n \"$dir\" ] && mpv --no-video \"$dir\""]
         folderProc.running = false
@@ -760,7 +622,11 @@ ShellRoot {
         property var player: Mpris.players.values.length > 0 ? Mpris.players.values[0] : null
 
         function findActive() {
-            return player || (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null)
+            var values = Mpris.players.values
+            for (var i = values.length - 1; i >= 0; i--) {
+                if (values[i].canPlay) return values[i]
+            }
+            return null
         }
 
         function updateState() {
